@@ -14,7 +14,7 @@
             container: null,
             minWordChar: 2,
             clues: {
-                id: null,
+                container: null,
                 labels: {
                     horizontal: 'Across',
                     vertical: 'Down'
@@ -469,9 +469,9 @@
                 throw Error('Clues for the crossword are not set!');
             }
 
-            container = typeof this.options.clues.id === 'string' ?
-                document.querySelector(this.options.clues.id) : this.options.clues.id instanceof HTMLElement ?
-                    this.options.clues.id : false;
+            container = typeof this.options.clues.container === 'string' ?
+                document.querySelector(this.options.clues.container) : this.options.clues.container instanceof HTMLElement ?
+                    this.options.clues.container : false;
 
             if (container===false) {
                 return;
