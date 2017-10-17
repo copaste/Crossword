@@ -53,15 +53,15 @@ The minimum chars after which the string will be marked as a word
 The clues object
 
 **Default**:
-```json
+```javascript
 {
-    container: null, /* the container where the clues will be placed {String|HTMLElement} */
+    container: null, // the container where the clues will be placed {String|HTMLElement}
     labels: {
-        horizontal: 'Across', /* label {String} */
-        vertical: 'Down' /* label {String} */
+        horizontal: 'Across', // label {String}
+        vertical: 'Down' // label {String}
     },
-    horizontal: [], /* Clue list {String[]} */
-    vertical: [] /* Clue list {String[]} */
+    horizontal: [], // Clue list {String[]}
+    vertical: [] // Clue list {String[]}
 }
 ```
 
