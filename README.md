@@ -48,22 +48,13 @@ The minimum chars after which the string will be marked as a word
 
 **Default**: `2`
 
-### `minWordChar {Number}`
-
-clues: {
-    id: null,
-    labels: {
-        horizontal: 'Across',
-        vertical: 'Down'
-    },
-    horizontal: [],
-    vertical: []
-}
+### `clues {Object}`
 
 The clues object
 
 **Default**: `
-clues: {
+```json
+{
     container: null, // the container where the clues will be placed {String|HTMLElement}
     labels: {
         horizontal: 'Across', // label {String}
@@ -72,6 +63,7 @@ clues: {
     horizontal: [], // Clue list {String[]}
     vertical: [] // Clue list {String[]}
 }
+```
 `
 
 ## Data formats
