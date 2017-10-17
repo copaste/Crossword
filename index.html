@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" type="text/css" href="./styles.css">
+
+    <title>Crossword</title>
+</head>
+<body>
+    <div class="crossword-container"></div>
+    <div class="clues-container"></div>
+
+    <table id="fff">
+        <tr>
+            <th>1</th>
+            <th>1</th>
+            <th>1</th>
+            <th>1</th>
+            <th>1</th>
+            <th>@1</th>
+            <th></th>
+            <th>2</th>
+            <th>2</th>
+            <th>2</th>
+            <th>2</th>
+            <th>2</th>
+            <th>2</th>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td></td>
+            <td>4</td>
+            <td></td>
+            <td></td>
+            <td>5</td>
+            <td></td>
+            <td>6</td>
+            <td></td>
+            <td>3</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>#</td>
+            <td>@4</td>
+            <td>7</td>
+            <td>7</td>
+            <td>5</td>
+            <td>7</td>
+            <td>6</td>
+            <td>#</td>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>@6</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>#</td>
+            <td>4</td>
+            <td>#</td>
+            <td>#</td>
+            <td>5</td>
+            <td>#</td>
+            <td>6</td>
+            <td>8</td>
+            <td>3</td>
+            <td>5</td>
+            <td>#</td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>#</td>
+            <td>4</td>
+            <td>#</td>
+            <td>#</td>
+            <td>5</td>
+            <td>#</td>
+            <td>@6</td>
+            <td>#</td>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>5</td>
+            <td>#</td>
+            <td>6</td>
+            <td>#</td>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>@8</td>
+            <td>3</td>
+            <td>5</td>
+            <td>3</td>
+            <td>6</td>
+            <td>3</td>
+            <td>3</td>
+            <td>3</td>
+            <td>3</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>9</td>
+            <td>#</td>
+            <td>8</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>6</td>
+            <td>#</td>
+            <td>3</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>9</td>
+            <td>#</td>
+            <td>5</td>
+            <td>@5</td>
+            <td>5</td>
+            <td>5</td>
+            <td>6</td>
+            <td>#</td>
+            <td>@3</td>
+            <td>8</td>
+            <td>7</td>
+            <td>8</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>9</td>
+            <td>#</td>
+            <td>8</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>5</td>
+            <td>#</td>
+            <td>#</td>
+            <td>7</td>
+            <td>#</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>@9</td>
+            <td>2</td>
+            <td>8</td>
+            <td>2</td>
+            <td>2</td>
+            <td>2</td>
+            <td>#</td>
+            <td>5</td>
+            <td>#</td>
+            <td>#</td>
+            <td>7</td>
+            <td>#</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>9</td>
+            <td>#</td>
+            <td>8</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>#</td>
+            <td>5</td>
+            <td>4</td>
+            <td>4</td>
+            <td>@4</td>
+            <td>4</td>
+        </tr>
+        <tr>
+            <td>#</td>
+            <td>9</td>
+            <td>7</td>
+            <td>7</td>
+            <td>7</td>
+            <td>7</td>
+            <td>7</td>
+            <td>7</td>
+            <td>7</td>
+            <td>#</td>
+            <td>#</td>
+            <td>7</td>
+            <td>#</td>
+        </tr>
+    </table>
+
+    <script type="text/javascript" src="./crossword.js"></script>
+    <script>
+
+    var text = ['RECIPROCA#IMAM#REALTA',
+        'ABATE#VASSOIO#COMFORT',
+        'YALE#DENSITA#NOT#AGIO',
+        'BNL#LESTI#A#POREC#OPM',
+        'RO#MENTORE#CARPALE#LO',
+        'A#IAGO#RICCARDOTERZO#',
+        'DANNATI#ACANZI#ATEA#C',
+        'BRENTANO#ELOISA#OMNIA',
+        'UTS#ATENE#ANATRA#ITCS',
+        'RI#PROROGA#ILARCA#ETA',
+        'Y#LEI#TROPICI#ARIE#UT',
+        '#LITANIE#REO#PSORIASI'].join("\n");
+
+        text = ['atbay#wrist#wag',
+            'carpe#hosta#ate',
+            'crapstables#con',
+            'rowe#atee#stoli',
+            'atlanta##yertle',
+            '###sasha#alee##',
+            'fewer#oxen#exam',
+            'ari#coolair#age',
+            'nana#rtes#arson',
+            '##eves#syria###',
+            'casino##ponchos',
+            'idtag#biel#cash',
+            'tea#animalhouse',
+            'eli#galas#ionia',
+            'sen#enemy#enter'].join("\n");
+
+        // CSV format
+
+        text = [
+            'a,a,a,a,a,@a,#,b,b,b,b,b,b',
+            'z,,w,,,x,,6,,3,,,',
+            'z,,@c,c,c,c,c,c,,3,,,@6',
+            'z,,w,,,x,,d,d,d,d,,6',
+            'z,,w,,,x,,@6,,3,,,6',
+            'z,,,,,x,,6,,3,,,6',
+            'z,,,@e,e,e,e,e,e,e,e,e,e',
+            ',9,,8,,,,6,,3,,,',
+            ',9,,f,@f,f,f,f,,@g,g,g,g',
+            ',9,,8,,,,,5,,,7,',
+            'h,@h,h,h,h,h,h,,5,,,7,',
+            ',9,,8,,,,,i,i,i,@i,i',
+            ',j,j,j,j,j,j,j,j,,,7,'
+        ].join("\n");
+
+        /*
+            text = ['##1######2##',
+            '##1######2##',
+            '3#1##4###2##',
+            '3#1##4#5#2##',
+            '3#1#666666##',
+            '3#1##4#5#2##',
+            '3#1##4#5####',
+            '777777#5####',
+            '3#1##4#5####',
+            '3#1####5####',
+            '3#1####5####',
+            '3#1####88888'].join("\n");
+        */
+        /*
+        text = ['##1######2###5',
+        '##1######2###5',
+        '3#1##4###2###5',
+        '3#1##4#5#2###5',
+        '3#1#666666###5',
+        '3#1##4#5#2###5',
+        '3#1##4#5#####5',
+        '777777#5######',
+        '3#1##4#5##4444',
+        '3#1####5######',
+        '3#1####5######',
+        '3#1####88888##'].join("\n");
+        */
+
+        var crossword = new CrossWord({
+            container: '.crossword-container',
+            data: document.getElementById('fff'),
+           // format: 'csv',
+            clues: {
+                id: '.clues-container',
+                horizontal: [
+                    'The liquid that is produced in your mouth.',
+                    'Being the only one of its kind.',
+                    '“His wife found out about his with another woman.”',
+                    'To prepare a piece of writing to be published.',
+                    'At a later time; in the end.',
+                    '“She felt very of her son’s achievements.”',
+                    '“The doctor said I needed to have a blood .”',
+                    'To solve a problem or mystery.',
+                    'A location or area.',
+                    'To persuade somebody that it is necessary to do something.'
+                ],
+                vertical: [
+                    'More than two but not very many.',
+                    'To get to know.',
+                    'To examine something in order to discover more about it.',
+                    'Not from the same family.',
+                    'A person who comes to live in a country that is not his or her own.',
+                    '“The film is based on a true .”',
+                    '“Before we start playing, I’ll the rules of the game.”',
+                    'Relating to a particular race of people.',
+                    '“When I saw the restaurant bill, I got a very nasty .”',
+                    '“Oh, no! It’s raining. I I didn’t leave the car window open.”'
+                ]
+            }
+        });
+
+        crossword.init();
+        crossword.initClues();
+    </script>
+
+
+</body>
+</html>
