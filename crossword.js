@@ -1,10 +1,6 @@
 (function (window, document) {
     'use strict';
 
-    // TODO: 1. highlight crossword on hover/click on a clue
-    // TODO: 3. implement check function
-    // TODO: 4. highlight the wrong words with red ?!?
-
     function CrossWord (options) {
         var defaultOptions = {
             blankChar: '#',
@@ -25,13 +21,18 @@
         };
 
         this.crosswordEl = null;
+        this.cluesEl = null;
         this.wordNumbers = {horizontal: [], vertical: []};
         this.highlightedTiles = [];
         this.specialTiles = [];
         this.highlightState = '';
-        this.cluesInitialized = false;
         this.highlightedClue;
-        this.isFromTable = false;
+        this._cluesInitialized = false;
+        this._fromTable = false;
+        this._fromTablePlace = false;
+        this._crosswordOnClick;
+        this._crosswordOnKeydown;
+        this._clueOnClick;
 
         this.options = merge2Objects(defaultOptions, options);
     }
@@ -84,8 +85,7 @@
             }
 
             if (this.options.data instanceof HTMLTableElement) {
-                this.options.data = this.buildFromTable(this.options.data);
-                this.isFromTable = true;
+                this.options.data = this._buildFromTable(this.options.data);
             }
 
             if (typeof this.options.data === 'function') {
@@ -103,24 +103,24 @@
                 throw Error('The "container" property in the options should be string or HTMLElement, ' + typeof this.options.container + ' given!');
             }
 
-            this.options.data = this.balanceRows(this.options.data);
-            this.specialTiles = this.getSpecialTiles();
+            this.options.data = this._balanceRows(this.options.data);
+            this.specialTiles = this._getSpecialTiles();
 
             if (this.specialTiles.length > 0) {
-                this.options.data = this.balanceRows(this.options.data);
+                this.options.data = this._balanceRows(this.options.data);
             }
 
             this.rowsText = this.options.data.split("\n");
-            this.colsText = this.getColsText(this.rowsText);
-            this.wordsHorizontal = this.getWords(this.rowsText);
-            this.wordsVertical = this.getWords(this.colsText, true);
-            this.letters = this.mapLetters(this.rowsText);
-            this.crosswordEl = this.create(this.rowsText);
-            this.addNumbers();
-            this.initEvents();
+            this.colsText = this._getColsText(this.rowsText);
+            this.wordsHorizontal = this._getWords(this.rowsText);
+            this.wordsVertical = this._getWords(this.colsText, true);
+            this.letters = this._mapLetters(this.rowsText);
+            this.crosswordEl = this._create(this.rowsText);
+            this._addNumbers();
+            this.initCrossWordEvents();
         },
 
-        getColsText: function (rows) {
+        _getColsText: function (rows) {
             var rowLetters = [],
                 colWords = [],
                 len = rows[0].length;
@@ -139,7 +139,7 @@
             return colWords;
         },
 
-        getWords: function (rows, vertical) {
+        _getWords: function (rows, vertical) {
             var wordList = [];
                 vertical = vertical || false;
 
@@ -170,7 +170,7 @@
             return wordList;
         },
 
-        mapLetters: function (rows) {
+        _mapLetters: function (rows) {
             var map = {},
                 rowsLen = rows.length;
 
@@ -198,7 +198,7 @@
             return map;
         },
 
-        balanceRows: function (data) {
+        _balanceRows: function (data) {
             var self = this,
                 longestRow = 0,
                 rows,
@@ -210,7 +210,7 @@
                     return r.split(',').map(function (x) {
                         return x.length === 0 ? self.options.blankChar : x;
                     })
-                        .join('');
+                    .join('');
                 })
                 .join("\n");
             }
@@ -232,7 +232,7 @@
             return rows.join("\n");
         },
 
-        buildFromTable: function (table) {
+        _buildFromTable: function (table) {
             var rows, cols, data = [];
 
             if (!table instanceof HTMLTableElement) {
@@ -250,12 +250,16 @@
                 }
             }
 
+            table.insertAdjacentHTML('afterend', '<!-- ' + CrossWord.CLASS_PREFIX + 'table-element -->');
+            this._fromTable = table;
+            this._fromTablePlace = table.nextSibling;
+
             table.parentElement.removeChild(table);
 
             return data.join("\n");
         },
 
-        create: function (rows) {
+        _create: function (rows) {
             var frag = document.createDocumentFragment();
             var table = document.createElement('table');
             var row = document.createElement('tr');
@@ -329,7 +333,14 @@
             return [[coords[0], col], [row-1, col]];
         },
 
-        getSpecialTiles: function () {
+        getSpecialWord: function () {
+            return this.specialTiles.map(function (coords) {
+               return document.getElementById('p-' + coords.replace(',', '-')).firstElementChild.value;
+            })
+            .join('');
+        },
+
+        _getSpecialTiles: function () {
             var self = this,
                 rows,
                 currRowSpecTiles = 0,
@@ -360,7 +371,7 @@
             return specialTiles;
         },
 
-        addNumbers: function() {
+        _addNumbers: function() {
             var self = this,
                 boxClasses = [],
                 span = document.createElement('span'),
@@ -463,7 +474,7 @@
         },
 
         initClues: function () {
-            var container, cluesCont, clueEl, frag, el, label;
+            var self = this, container, cluesCont, clueEl, frag, el, label;
 
             if (!this.options.clues.horizontal.length || !this.options.clues.vertical.length) {
                 throw Error('Clues for the crossword are not set!');
@@ -477,6 +488,7 @@
                 return;
             }
 
+            this.cluesEl = document.createElement('div');
             cluesCont = document.createElement('ul');
             clueEl = document.createElement('li');
             label = document.createElement('h3');
@@ -484,7 +496,7 @@
 
             label.textContent = this.options.clues.labels.horizontal;
             label.classList.add(CrossWord.CLASS_PREFIX + 'clues-header');
-            container.appendChild(label.cloneNode(true));
+            this.cluesEl.appendChild(label.cloneNode(true));
 
             for (var i = 0; i < this.options.clues.horizontal.length; i++) {
                 el = clueEl.cloneNode(false);
@@ -495,12 +507,12 @@
 
             cluesCont.appendChild(frag);
             cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'horizontal-clues');
-            container.appendChild(cluesCont.cloneNode(true));
+            this.cluesEl.appendChild(cluesCont.cloneNode(true));
 
             cluesCont = document.createElement('ul');
             label = document.createElement('h3');
             label.textContent = this.options.clues.labels.vertical;
-            container.appendChild(label);
+            this.cluesEl.appendChild(label);
             for (var j = 0; j < this.options.clues.vertical.length; j++) {
                 el = clueEl.cloneNode(false);
                 el.textContent = this.wordNumbers.vertical[j].number + '. ' + this.options.clues.vertical[j];
@@ -510,12 +522,35 @@
 
             cluesCont.appendChild(frag);
             cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'vertical-clues');
-            container.appendChild(cluesCont.cloneNode(true));
-            container.classList.add(CrossWord.CLASS_PREFIX + 'clue-container');
+            this.cluesEl.appendChild(cluesCont.cloneNode(true));
+            this.cluesEl.classList.add(CrossWord.CLASS_PREFIX + 'clue-container');
+            container.appendChild(this.cluesEl);
 
-            this.cluesInitialized = true;
+            this._cluesInitialized = true;
+            this.initCluesEvents();
 
-            return container;
+            return this.cluesEl;
+        },
+
+        initCluesEvents: function () {
+            var self = this;
+
+            if (!this.cluesEl) {
+                return;
+            }
+
+            this.cluesEl.addEventListener('click', ( this._clueOnClick = function (ev) {
+                var coords = ev.target.getAttribute('id').replace(/yncw\-clue\-[v|h]\-/g, '');
+                var isVertical = ev.target.getAttribute('id').indexOf('-v-') !== -1;
+                var currentWord = self.wordsHorizontal.concat(self.wordsVertical).filter(function (w) {
+                    return coords === w.coords[0].join('-') && w.isVertical === isVertical;
+                })[0] || null;
+
+                self.highlight(currentWord.coords);
+                self.highlightClue([coords.split(',')], isVertical);
+                self.highlightState = isVertical ? CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_HORIZONTAL;
+                document.getElementById('p-' + coords).firstElementChild.focus();
+            }));
         },
 
         highlightClue: function (coords, vertical) {
@@ -532,7 +567,7 @@
             this.highlightedClue && this.highlightedClue.classList.add('highlight');
         },
 
-        initEvents: function () {
+        initCrossWordEvents: function () {
             var self = this,
                 isStartWordPosition = false;
 
@@ -540,7 +575,7 @@
                 return;
             }
 
-            this.crosswordEl.addEventListener('click', function crosswordOnClick (ev) {
+            this.crosswordEl.addEventListener('click', (this._crosswordOnClick = function (ev) {
                 var target = ev.target.parentElement,
                     coords = target.dataset.coords && target.dataset.coords.split(',').map(Number),
                     matchHorizontalPos = null,
@@ -585,7 +620,7 @@
                         return matchHorizontalPos.join(',') === w.coords.join(',');
                     })[0] || null;
                     self.highlightState = currentWord ? self.highlight(currentWord.coords) && self.highlightState : CrossWord.HIGHLIGHT_VERTICAL;
-                    self.cluesInitialized && self.highlightClue(currentWord && currentWord.coords, false);
+                    self._cluesInitialized && self.highlightClue(currentWord && currentWord.coords, false);
                 }
 
                 if (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL) {
@@ -594,7 +629,7 @@
                         return matchVerticalPos.join(',') === w.coords.join(',') ;
                     })[0] || null;
                     self.highlightState = currentWord ? self.highlight(currentWord.coords) && self.highlightState : CrossWord.HIGHLIGHT_DEFAULT;
-                    self.cluesInitialized && self.highlightClue(currentWord && currentWord.coords, true);
+                    self._cluesInitialized && self.highlightClue(currentWord && currentWord.coords, true);
                 }
 
                 if (self.highlightState === CrossWord.HIGHLIGHT_DEFAULT) {
@@ -604,9 +639,9 @@
                 ev.preventDefault();
                 ev.stopPropagation();
                 return false;
-            });
+            }));
 
-            this.crosswordEl.addEventListener('keydown', function crosswordOnClick (ev) {
+            this.crosswordEl.addEventListener('keydown', (this._crosswordOnKeydown = function (ev) {
                 var code = null,
                     tileElement = null,
                     coords = [],
@@ -689,52 +724,55 @@
                 ev.preventDefault();
                 ev.stopPropagation();
                 return false;
-            });
+            }));
+        },
+
+        destroy: function () {
+            this.specialTiles = [];
+            this.wordsHorizontal = [];
+            this.wordsVertical = [];
+            this.wordNumbers = {horizontal: [], vertical: []};
+            this.highlightedTiles = [];
+            this.highlightState = '';
+            this._cluesInitialized = false;
+
+            if (this.crosswordEl) {
+                this.crosswordEl.removeEventListener('click', this._crosswordOnClick);
+                this.crosswordEl.removeEventListener('keydown', this._crosswordOnKeydown);
+                this._clueOnClick && this.cluesEl.removeEventListener('click', this._clueOnClick);
+                this.crosswordEl.parentElement.removeChild(this.crosswordEl);
+
+                if (this._fromTable) {
+                    this._fromTablePlace.parentElement.insertBefore(this._fromTable, this._fromTablePlace.nextElementSibling);
+                    this._fromTablePlace.parentElement.removeChild(this._fromTablePlace);
+                    this.options.data = this._fromTable;
+                }
+
+                if (this.cluesEl) {
+                    this.cluesEl.parentElement.removeChild(this.cluesEl);
+                }
+            }
         }
     };
 
-    window.CrossWord = CrossWord;
-
-
-    function testPerf (callback, times) {
-        var start = Date.now();
-
-        for (var i = 0; i < times; i++) {
-            callback();
-        }
-
-        var end = Date.now();
-
-        return end - start;
+    // Add support for AMD (Asynchronous Module Definition) libraries such as require.js.
+    if (typeof define === 'function' && define.amd) {
+        define([], function() {
+            return {
+                CrossWord: CrossWord
+            };
+        });
     }
 
-    // Test the performance of getDocumentById vs. querySelectorAll with multiple selectors
-    //
-    setTimeout(function () {
-        return;
-        var t1 = testPerf(function() {
-            "#p-4-0,#p-4-1,#p-4-2,#p-4-3,#p-4-4,#p-4-5,#p-4-6".split(',').map(function (t) {
-                document.getElementById(t.replace('#', '')).classList.contains('lettter');
-            });
-        }, 100000);
+    // Add support for CommonJS libraries such as browserify.
+    if (typeof exports !== 'undefined') {
+        exports.CrossWord = CrossWord;
+    }
 
-        var t2 = testPerf(function() {
-            var els = document.querySelectorAll("#p-4-0,#p-4-1,#p-4-2,#p-4-3,#p-4-4,#p-4-5,#p-4-6");
-            for (var i = 0; i < els.length; i++) {
-                els[i].classList.contains('letter');
-            }
-        }, 100000);
-
-        console.log(t1, t2);
-    });
-
-
-    /*
-    self.highlightState = (isStartWordPosition.horizontal && highlightState === CrossWord.HIGHLIGHT_DEFAULT) ?
-                    CrossWord.HIGHLIGHT_HORIZONTAL : (isStartWordPosition.vertical && highlightState !== CrossWord.HIGHLIGHT_VERTICAL) ?
-                        CrossWord.HIGHLIGHT_VERTICAL : (isStartWordPosition.vertical && highlightState === CrossWord.HIGHLIGHT_VERTICAL && !isStartWordPosition.horizontal) ?
-                            CrossWord.HIGHLIGHT_HORIZONTAL : highlightState === CrossWord.HIGHLIGHT_DEFAULT ?
-                                CrossWord.HIGHLIGHT_HORIZONTAL : highlightState === CrossWord.HIGHLIGHT_HORIZONTAL ?
-                                    CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_DEFAULT;
-     */
+    // Define globally in case AMD is not available or unused.
+    if (typeof window !== 'undefined') {
+        window.CrossWord = CrossWord;
+    } else if (typeof global !== 'undefined') { // Add to global in Node.js (for testing, etc).
+        global.CrossWord = CrossWord;
+    }
 })(window, document);

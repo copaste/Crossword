@@ -13,6 +13,7 @@ td {
     height: 45px;
     text-align: center;
     outline: none;
+    background-color: #f4f4f4;
 }
 
 td span {
@@ -23,9 +24,15 @@ td span {
     left: 1px;
 }
 
+td:after {
+    content: "";
+    display: block;
+    width: 45px;
+}
+
 td.yncw-blank {
-    background: black;
-    border: none;
+    background: #273b44;;
+    /*border: none;*/
   /*visibility: hidden;*/
 }
 
@@ -41,10 +48,12 @@ td input {
     outline: none;
 }
 
+td.highlight,
 td.highlight input {
     background-color: #fff9c5;
 }
 
+td.special-tile,
 td.special-tile input {
     background-color: #fde9ab;
 }
@@ -59,11 +68,17 @@ tr:last-child td {
 
 table {
     /*width: 100%;*/
+    border: 1px solid #273b44;
     border-spacing: 0;
 }
 
 .yncw-clue-container ul {
     list-style: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 18px;
+    margin-bottom: 5px;
 }
 
 .yncw-clue-container li.highlight {
