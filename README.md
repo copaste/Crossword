@@ -100,7 +100,7 @@ The clues object
                   'R,I,#,P,R,O,R,O,G,A,#,I,L,A,R,C,A,#,E,T,A',
                   'Y,#,L,E,I,#,T,R,O,P,I,C,I,#,A,R,I,E,#,U,T',
                   '#,L,I,T,A,N,I,E,#,R,E,O,#,P,S,O,R,I,A,S,I'].join("\n");
-    // you have to set in the options
+    // you have to set format to 'csv' in the options
     var crossWord = new new CrossWord({
         ...
         data: dataCSV,
@@ -108,7 +108,7 @@ The clues object
         ...
     });
 
-    // You can create HTML Table and provide it to in the options
+    // You can create HTML Table and provide it to the data property in the options
     var crossWord = new new CrossWord({
         ...
         data: document.getElementById('crossword-table'),
