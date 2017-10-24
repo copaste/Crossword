@@ -563,6 +563,10 @@
             this.cluesEl.children[0].appendChild(label.cloneNode(true));
 
             for (var i = 0; i < this.options.clues.horizontal.length; i++) {
+                if (!this.wordNumbers.horizontal[i]) {
+                    continue;
+                }
+
                 el = clueEl.cloneNode(false);
                 el.innerHTML = '<span class="number">' + this.wordNumbers.horizontal[i].number + '.</span> ' + this.options.clues.horizontal[i];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-h-').concat(this.wordNumbers.horizontal[i].coords.join('-')));
@@ -578,6 +582,10 @@
             label.textContent = this.options.clues.labels.vertical;
             this.cluesEl.children[1].appendChild(label);
             for (var j = 0; j < this.options.clues.vertical.length; j++) {
+                if (!this.wordNumbers.vertical[j]) {
+                    continue;
+                }
+
                 el = clueEl.cloneNode(false);
                 el.innerHTML = '<span class="number">' + this.wordNumbers.vertical[j].number + '.</span> ' + this.options.clues.vertical[j];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-v-').concat(this.wordNumbers.vertical[j].coords.join('-')));

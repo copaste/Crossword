@@ -1,6 +1,8 @@
 .crossword-container {
     width: 100%;
     max-width: 600px;
+    float: left;
+    margin-right: 20px;
 }
 
 .yncw-crossword {
@@ -115,5 +117,5 @@ table.yncw-crossword {
 }
 
 .yncw-clue-container li.highlight {
-    background: #eee;
+    background: rgba(0, 150, 136, 0.4);
 }
