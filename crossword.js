@@ -6,9 +6,14 @@
             blankChar: '#',
             highlightChar: '@',
             data: null,
-            format: 'txt',
+            format: 'txt', // txt,csv,xml
+            xmlElement: 'Crossword',
             container: null,
             minWordChar: 2,
+            responsive: true,
+            tableElement: 'table',
+            rowElement: 'tr',
+            cellElement: 'td',
             clues: {
                 container: null,
                 labels: {
@@ -27,12 +32,14 @@
         this.specialTiles = [];
         this.highlightState = '';
         this.highlightedClue;
+        this._elementOnFocus;
         this._cluesInitialized = false;
         this._fromTable = false;
         this._fromTablePlace = false;
         this._crosswordOnClick;
         this._crosswordOnKeydown;
         this._clueOnClick;
+        this._onWindowResize;
 
         this.options = merge2Objects(defaultOptions, options);
     }
@@ -55,6 +62,19 @@
         });
 
         return temp;
+    }
+
+    function b64EncodeUnicode (str) {
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+            function toSolidBytes(match, p1) {
+                return String.fromCharCode('0x' + p1);
+            }));
+    }
+
+    function b64DecodeUnicode(str) {
+        return decodeURIComponent(atob(str).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
     }
 
     function getLongestRow (data, excludeChar) {
@@ -84,12 +104,16 @@
                 throw Error('Please set the "data" property in the options!');
             }
 
+            if (typeof this.options.data === 'function') {
+                this.options.data = this.options.data();
+            }
+
             if (this.options.data instanceof HTMLTableElement) {
                 this.options.data = this._buildFromTable(this.options.data);
             }
 
-            if (typeof this.options.data === 'function') {
-                this.options.data = this.options.data();
+            if (this.options.format === 'xml') {
+                this.options.data = this._buildFromXML(this.options.data);
             }
 
             if (this.options.data.split("\n").length < 3) {
@@ -116,8 +140,10 @@
             this.wordsVertical = this._getWords(this.colsText, true);
             this.letters = this._mapLetters(this.rowsText);
             this.crosswordEl = this._create(this.rowsText);
+
             this._addNumbers();
-            this.initCrossWordEvents();
+            this._initCrosswordEvents();
+            this.options.responsive && this._responsive();
         },
 
         _getColsText: function (rows) {
@@ -191,7 +217,7 @@
                         hasRight: j < (charsLen - 1) && chars[j+1].replace(this.options.blankChar,'').length > 0,
                         hasUp: i > 0 && prevRowChars[j].trim().replace(this.options.blankChar,'').length > 0,
                         hasDown: i < (rowsLen - 1) && nextRowChars[j].trim().replace(this.options.blankChar,'').length > 0
-                    }
+                    };
                 }
             }
 
@@ -235,7 +261,7 @@
         _buildFromTable: function (table) {
             var rows, cols, data = [];
 
-            if (!table instanceof HTMLTableElement) {
+            if (! table instanceof HTMLTableElement) {
                 throw Error('Not HTMLTable element!');
             }
 
@@ -250,7 +276,7 @@
                 }
             }
 
-            table.insertAdjacentHTML('afterend', '<!-- ' + CrossWord.CLASS_PREFIX + 'table-element -->');
+            table.insertAdjacentHTML('afterend', '<!-- ' + CrossWord.CLASS_PREFIX + 'crossword-table -->');
             this._fromTable = table;
             this._fromTablePlace = table.nextSibling;
 
@@ -259,11 +285,43 @@
             return data.join("\n");
         },
 
+        _buildFromXML: function (xmlTxt) {
+            var parser, xmlDOM, crossWord, rows, cols, data = [];
+
+            if (window.DOMParser) {
+                parser = new DOMParser();
+                xmlDOM = parser.parseFromString(xmlTxt, "text/xml");
+            }
+            else { // Internet Explorer
+                xmlDOM = new ActiveXObject("Microsoft.XMLDOM");
+                xmlDOM.async = false;
+                xmlDOM.loadXML(xmlTxt);
+            }
+
+            crossWord = xmlDOM.getElementsByTagName(this.options.xmlElement);
+
+            if (!crossWord.length) {
+                return '';
+            }
+
+            rows = crossWord[0].children;
+            for (var i = 0; i < rows.length; i++) {
+                cols = rows[i].textContent.split('');
+                data[i] = '';
+
+                for (var j = 0; j < cols.length; j++) {
+                    data[i] += cols[j];
+                }
+            }
+
+            return data.join("\n");
+        },
+
         _create: function (rows) {
             var frag = document.createDocumentFragment();
-            var table = document.createElement('table');
-            var row = document.createElement('tr');
-            var cell = document.createElement('td');
+            var table = document.createElement('div');
+            var row = document.createElement('div');
+            var cell = document.createElement('div');
             var input = document.createElement('input');
 
             input.setAttribute('maxlength', 1);
@@ -276,6 +334,7 @@
                 var chars = rows[i].split('');
                 var r = row.cloneNode(false);
 
+                r.classList.add(CrossWord.CLASS_PREFIX + 'row');
                 table.appendChild(r);
 
                 for (var j = 0; j < chars.length; j++) {
@@ -395,7 +454,7 @@
 
             boxClasses.map(function (id) {
                 var s = span.cloneNode(false),
-                    word = self.isWordStart(id.replace('p-','').split('-'));
+                    word = self._isWordStart(id.replace('p-','').split('-'));
 
                 s.textContent = (++counter) + '';
                 document.getElementById(id).appendChild(s);
@@ -434,7 +493,7 @@
             }
         },
 
-        isHorizontalWordFilled: function (coords) {
+        _isHorizontalWordFilled: function (coords) {
             var wordCoords = this.getHorizontalWord(coords);
 
             for (var i = wordCoords[0][0]; i < wordCoords[1][0]+1; i++) {
@@ -448,7 +507,7 @@
             return true;
         },
 
-        isVerticalWordFilled: function (coords) {
+        _isVerticalWordFilled: function (coords) {
             var wordCoords = this.getVerticalWord(coords);
 
             for (var i = wordCoords[0][0]; i < wordCoords[1][0]+1; i++) {
@@ -462,7 +521,7 @@
             return true;
         },
 
-        isWordStart: function (coords) {
+        _isWordStart: function (coords) {
             return {
                 horizontal: this.wordsHorizontal.filter(function (w) {
                     return parseInt(w.row) === parseInt(coords[0]) && parseInt(w.col) === parseInt(coords[1]);
@@ -482,64 +541,69 @@
 
             container = typeof this.options.clues.container === 'string' ?
                 document.querySelector(this.options.clues.container) : this.options.clues.container instanceof HTMLElement ?
-                    this.options.clues.container : false;
+                    this.options.clues.container : null;
 
-            if (container===false) {
+            if (!container) {
                 return;
             }
 
             this.cluesEl = document.createElement('div');
+            this.cluesEl.appendChild(this.cluesEl.cloneNode(false));
+            this.cluesEl.appendChild(this.cluesEl.cloneNode(false));
             cluesCont = document.createElement('ul');
             clueEl = document.createElement('li');
             label = document.createElement('h3');
             frag = document.createDocumentFragment();
 
+            this.cluesEl.children[0].classList.add(CrossWord.CLASS_PREFIX + 'hclues');
+            this.cluesEl.children[1].classList.add(CrossWord.CLASS_PREFIX + 'vclues');
+
             label.textContent = this.options.clues.labels.horizontal;
             label.classList.add(CrossWord.CLASS_PREFIX + 'clues-header');
-            this.cluesEl.appendChild(label.cloneNode(true));
+            this.cluesEl.children[0].appendChild(label.cloneNode(true));
 
             for (var i = 0; i < this.options.clues.horizontal.length; i++) {
                 el = clueEl.cloneNode(false);
-                el.textContent = this.wordNumbers.horizontal[i].number + '. ' + this.options.clues.horizontal[i];
+                el.innerHTML = '<span class="number">' + this.wordNumbers.horizontal[i].number + '.</span> ' + this.options.clues.horizontal[i];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-h-').concat(this.wordNumbers.horizontal[i].coords.join('-')));
                 frag.appendChild(el);
             }
 
             cluesCont.appendChild(frag);
-            cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'horizontal-clues');
-            this.cluesEl.appendChild(cluesCont.cloneNode(true));
+            cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'clue-list');
+            this.cluesEl.children[0].appendChild(cluesCont.cloneNode(true));
 
             cluesCont = document.createElement('ul');
             label = document.createElement('h3');
             label.textContent = this.options.clues.labels.vertical;
-            this.cluesEl.appendChild(label);
+            this.cluesEl.children[1].appendChild(label);
             for (var j = 0; j < this.options.clues.vertical.length; j++) {
                 el = clueEl.cloneNode(false);
-                el.textContent = this.wordNumbers.vertical[j].number + '. ' + this.options.clues.vertical[j];
+                el.innerHTML = '<span class="number">' + this.wordNumbers.vertical[j].number + '.</span> ' + this.options.clues.vertical[j];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-v-').concat(this.wordNumbers.vertical[j].coords.join('-')));
                 frag.appendChild(el);
             }
 
             cluesCont.appendChild(frag);
-            cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'vertical-clues');
-            this.cluesEl.appendChild(cluesCont.cloneNode(true));
+            cluesCont.classList.add(CrossWord.CLASS_PREFIX + 'clue-list');
+            this.cluesEl.children[1].appendChild(cluesCont.cloneNode(true));
             this.cluesEl.classList.add(CrossWord.CLASS_PREFIX + 'clue-container');
             container.appendChild(this.cluesEl);
 
             this._cluesInitialized = true;
-            this.initCluesEvents();
+            this._initCluesEvents();
 
             return this.cluesEl;
         },
 
-        initCluesEvents: function () {
+        _initCluesEvents: function () {
             var self = this;
 
             if (!this.cluesEl) {
                 return;
             }
 
-            this.cluesEl.addEventListener('click', ( this._clueOnClick = function (ev) {
+            this.cluesEl.addEventListener('click', (this._clueOnClick = function (ev) {
                 var coords = ev.target.getAttribute('id').replace(/yncw\-clue\-[v|h]\-/g, '');
                 var isVertical = ev.target.getAttribute('id').indexOf('-v-') !== -1;
                 var currentWord = self.wordsHorizontal.concat(self.wordsVertical).filter(function (w) {
@@ -547,13 +611,17 @@
                 })[0] || null;
 
                 self.highlight(currentWord.coords);
-                self.highlightClue([coords.split(',')], isVertical);
+                self._highlightClue([coords.split(',')], isVertical);
                 self.highlightState = isVertical ? CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_HORIZONTAL;
                 document.getElementById('p-' + coords).firstElementChild.focus();
+
+                ev.preventDefault();
+                ev.stopPropagation();
+                return false;
             }));
         },
 
-        highlightClue: function (coords, vertical) {
+        _highlightClue: function (coords, vertical) {
             var id  = '';
 
             if (!Array.isArray(coords)) {
@@ -567,7 +635,7 @@
             this.highlightedClue && this.highlightedClue.classList.add('highlight');
         },
 
-        initCrossWordEvents: function () {
+        _initCrosswordEvents: function () {
             var self = this,
                 isStartWordPosition = false;
 
@@ -589,7 +657,7 @@
                 }
 
                 // Check if any word start from the selected tile
-                isStartWordPosition = self.isWordStart(coords);
+                isStartWordPosition = self._isWordStart(coords);
 
                 // Save last selected word coordinates
                 lastSelectedTiles = [
@@ -620,7 +688,7 @@
                         return matchHorizontalPos.join(',') === w.coords.join(',');
                     })[0] || null;
                     self.highlightState = currentWord ? self.highlight(currentWord.coords) && self.highlightState : CrossWord.HIGHLIGHT_VERTICAL;
-                    self._cluesInitialized && self.highlightClue(currentWord && currentWord.coords, false);
+                    self._cluesInitialized && self._highlightClue(currentWord && currentWord.coords, false);
                 }
 
                 if (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL) {
@@ -629,12 +697,16 @@
                         return matchVerticalPos.join(',') === w.coords.join(',') ;
                     })[0] || null;
                     self.highlightState = currentWord ? self.highlight(currentWord.coords) && self.highlightState : CrossWord.HIGHLIGHT_DEFAULT;
-                    self._cluesInitialized && self.highlightClue(currentWord && currentWord.coords, true);
+                    self._cluesInitialized && self._highlightClue(currentWord && currentWord.coords, true);
                 }
 
                 if (self.highlightState === CrossWord.HIGHLIGHT_DEFAULT) {
                     self.clearHighlight();
                 }
+
+                self._elementOnFocus && self._elementOnFocus.classList.remove(CrossWord.CLASS_PREFIX + 'onfocus');
+                self._elementOnFocus = target;
+                self._elementOnFocus.classList.add(CrossWord.CLASS_PREFIX + 'onfocus');
 
                 ev.preventDefault();
                 ev.stopPropagation();
@@ -725,6 +797,110 @@
                 ev.stopPropagation();
                 return false;
             }));
+
+            window.addEventListener('resize', (this._onWindowResize = function (ev) {
+                self._responsive.call(self, ev);
+            }));
+        },
+
+        _responsive: function () {
+            var rows = this.crosswordEl.children,
+                cols,
+                size = (this.crosswordEl.offsetWidth / rows[0].children.length - 1.2).toFixed(2);
+
+            for (var i = 0; i < rows.length; i++) {
+                cols = rows[i].children;
+                for (var j = 0; j < cols.length; j++) {
+                    cols[j].style.width = size + 'px';
+                    cols[j].style.height = size + 'px';
+
+                    if (cols[j].firstElementChild) {
+                        cols[j].firstElementChild.style.fontSize = Math.floor(size - 3) + 'px'
+                    }
+                }
+            }
+        },
+
+        getCrosswordData: function () {
+          var rows = this.crosswordEl.children,
+              cols,
+              data = '';
+
+            for (var i = 0; i < rows.length; i++) {
+                cols = rows[i].children;
+                for (var j = 0; j < cols.length; j++) {
+                    data += cols[j].firstElementChild ? (cols[j].firstElementChild.value || ' ') : this.options.blankChar;
+                }
+                data += "\n";
+            }
+
+            return data;
+        },
+
+        save: function (sessionId) {
+            return localStorage.setItem(sessionId, b64EncodeUnicode(this.getCrosswordData()));
+        },
+
+        load: function (sessionId) {
+            var decodedData = b64DecodeUnicode(localStorage.getItem(sessionId)),
+                rows = this.crosswordEl.children,
+                dataRows = decodedData.split("\n"),
+                cols, dataCols;
+
+            for (var i = 0; i < rows.length; i++) {
+                dataCols = dataRows[i].split('');
+                cols = rows[i].children;
+                for (var j = 0; j < cols.length; j++) {
+                    if (!cols[j].firstElementChild) {
+                        continue;
+                    }
+                    cols[j].firstElementChild.value = dataCols[j] === ' ' || dataCols[j] === this.options.blankChar ? '' : dataCols[j];
+                }
+            }
+
+            return decodedData;
+        },
+
+        clear: function () {
+            var rows = this.crosswordEl.children,
+                cols;
+
+            for (var i = 0; i < rows.length; i++) {
+                cols = rows[i].children;
+                for (var j = 0; j < cols.length; j++) {
+                    if (!cols[j].firstElementChild) {
+                        continue;
+                    }
+                    cols[j].firstElementChild.value = '';
+                }
+            }
+        },
+
+        checkCurrentLetter: function () {
+            if (!this._elementOnFocus) {
+                return null;
+            }
+
+            return this.letters[this._elementOnFocus.dataset.coords.replace(',', '-')].char === this._elementOnFocus.value;
+        },
+
+        checkCurrentWord: function () {
+            if (!this.highlightedTiles) {
+                return null;
+            }
+
+            for (var i = 0;i < this.highlightedTiles.length; i++) {
+                if (this.letters[this.highlightedTiles[i].dataset.coords.replace(',', '-')].char !== this.highlightedTiles[i].firstElementChild.value) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        checkCrossword: function () {
+            console.log(this.options.data);
+            return this.options.data === this.getCrosswordData();
         },
 
         destroy: function () {
@@ -737,6 +913,7 @@
             this._cluesInitialized = false;
 
             if (this.crosswordEl) {
+                window.removeEventListener('resize', this._onWindowResize);
                 this.crosswordEl.removeEventListener('click', this._crosswordOnClick);
                 this.crosswordEl.removeEventListener('keydown', this._crosswordOnKeydown);
                 this._clueOnClick && this.cluesEl.removeEventListener('click', this._clueOnClick);

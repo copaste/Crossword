@@ -1,10 +1,16 @@
-body {
-    font: 62.5%/1.3em Helvetica, sans-serif;
-    width: 90.3%;
-    margin: 10px auto;
+.crossword-container {
+    width: 100%;
+    max-width: 600px;
 }
 
-td {
+.yncw-crossword {
+    width: 100%;
+    font: 62.5%/1.3em Helvetica, sans-serif;
+}
+
+.yncw-crossword .yncw-blank,
+.yncw-crossword .yncw-letter,
+.yncw-crossword td {
     position: relative;
     border: 1px solid #ddd;
     border-bottom-width: 0;
@@ -16,27 +22,38 @@ td {
     background-color: #f4f4f4;
 }
 
-td span {
+.yncw-crossword div.yncw-blank,
+.yncw-crossword div.yncw-letter {
+    display: inline-block;
+    float: left;
+    overflow: hidden;
+}
+
+.yncw-crossword .yncw-letter span {
     color: #444;
-    font-size: 0.8em;
+    font-size: 1em; /* 0.80em */
     position: absolute;
-    top: -1px;
+    top: 0px;
     left: 1px;
 }
 
-td:after {
+.yncw-crossword td:after {
     content: "";
     display: block;
     width: 45px;
 }
 
-td.yncw-blank {
-    background: #273b44;;
-    /*border: none;*/
-  /*visibility: hidden;*/
+.yncw-crossword.blank-hidden .yncw-blank {
+    border: none;
+    visibility: hidden;
 }
 
-td input {
+.yncw-crossword .yncw-blank {
+    background: #273b44;
+}
+
+.yncw-crossword .yncw-letter input,
+.yncw-crossword td input {
     width: 100%;
     height: 100%;
     padding: 0em;
@@ -48,25 +65,41 @@ td input {
     outline: none;
 }
 
-td.highlight,
-td.highlight input {
+.yncw-crossword .yncw-letter.highlight,
+.yncw-crossword .yncw-letter.highlight input,
+.yncw-crossword td.highlight input {
     background-color: #fff9c5;
 }
 
-td.special-tile,
-td.special-tile input {
+.yncw-crossword .yncw-letter.special-tile,
+.yncw-crossword .yncw-letter.special-tile input,
+.yncw-crossword td.special-tile,
+.yncw-crossword td.special-tile input {
     background-color: #fde9ab;
 }
 
-tr td:first-child {
+.yncw-crossword > div.yncw-row {
+    clear: both;
+    white-space: nowrap;
+}
+
+.yncw-crossword > div.yncw-row:after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.yncw-crossword > div.yncw-row div:first-child,
+.yncw-crossword tr td:first-child {
     border-left-width: 1px;
 }
 
-tr:last-child td {
+.yncw-crossword > div.yncw-row:last-child div,
+.yncw-crossword tr:last-child td {
     border-bottom-width: 1px;
 }
 
-table {
+table.yncw-crossword {
     /*width: 100%;*/
     border: 1px solid #273b44;
     border-spacing: 0;
