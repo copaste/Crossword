@@ -32,7 +32,7 @@ The data
 
 ### `format {String}`
 
-The format of the data for the crossword (text or csv)
+The format of the data for the crossword (text, csv or xml)
 
 **Default**: `text`
 
@@ -105,6 +105,25 @@ The clues object
         ...
         data: dataCSV,
         format: 'csv',
+        ...
+    });
+
+    // XML format
+    var dataXML = [
+        '<?xml version="1.0" encoding="utf-8" ?>',
+        '<!-- Conforms to Universal Crossword Puzzle Format XPF Version 1.0 -->',
+        '<Crossword>',
+            '<Row>word1#word2#</Row>',
+            '<Row>word1#word2#</Row>',
+            '<Row>#word1#word2</Row>',
+            '<Row>#word1#word2</Row>',
+            '<Row>#word1#word2</Row>',
+        '</Crossword>'].join("\n");
+
+    var crossWord = new new CrossWord({
+        ...
+        data: dataXML,
+        format: 'xml',
         ...
     });
 

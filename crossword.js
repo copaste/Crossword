@@ -623,16 +623,19 @@
             }
 
             this.cluesEl.addEventListener('click', (this._clueOnClick = function (ev) {
-                var coords = ev.target.getAttribute('id').replace(/yncw\-clue\-[v|h]\-/g, '');
-                var isVertical = ev.target.getAttribute('id').indexOf('-v-') !== -1;
-                var currentWord = self.wordsHorizontal.concat(self.wordsVertical).filter(function (w) {
-                    return coords === w.coords[0].join('-') && w.isVertical === isVertical;
-                })[0] || null;
+                var clueId = ev.target.getAttribute('id') || '',
+                    coords = clueId.replace(/yncw\-clue\-[v|h]\-/g, ''),
+                    isVertical = clueId.indexOf('-v-') !== -1,
+                    currentWord = self.wordsHorizontal.concat(self.wordsVertical).filter(function (w) {
+                        return coords === w.coords[0].join('-') && w.isVertical === isVertical;
+                    })[0] || null;
 
-                self.highlight(currentWord.coords);
-                self._highlightClue([coords.split(',')], isVertical);
-                self.highlightState = isVertical ? CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_HORIZONTAL;
-                document.getElementById('p-' + coords).firstElementChild.focus();
+                if (currentWord) {
+                    self.highlight(currentWord.coords);
+                    self._highlightClue([coords.split(',')], isVertical);
+                    self.highlightState = isVertical ? CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_HORIZONTAL;
+                    document.getElementById('p-' + coords).firstElementChild.focus();
+                }
 
                 ev.preventDefault();
                 ev.stopPropagation();
