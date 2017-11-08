@@ -10,6 +10,10 @@
     font: 62.5%/1.3em Helvetica, sans-serif;
 }
 
+.yncw-crossword .yncw-vclues .yncw-clues-header {
+    margin-top: 10px;
+}
+
 .yncw-crossword .yncw-blank,
 .yncw-crossword .yncw-letter,
 .yncw-crossword td {

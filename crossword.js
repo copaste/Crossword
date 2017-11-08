@@ -170,13 +170,17 @@
                 vertical = vertical || false;
 
             for (var i = 0; i < rows.length; i++) {
-                var words = rows[i].split(this.options.blankChar);
+                var row = rows[i];
+                var words = row.split(this.options.blankChar);
 
                 for (var j = 0; j < words.length; j++) {
                     if (words[j] && words[j].length > this.options.minWordChar - 1) {
-                        var wordStart = rows[i].indexOf(words[j]);
+                        var wordStart = row.indexOf(words[j]);
                         var start = [i, wordStart];
-                        var end = [i, wordStart + words[j].length-1];
+                        var end = [i, wordStart + words[j].length - 1];
+
+                        // TODO: when there're two words with same characters this cause error
+                        row = row.replace(words[j], (new Array(words[j].length + 1)).join('_'));
 
                         if (vertical) {
                             start.reverse();
@@ -319,9 +323,9 @@
 
         _create: function (rows) {
             var frag = document.createDocumentFragment();
-            var table = document.createElement('div');
-            var row = document.createElement('div');
-            var cell = document.createElement('div');
+            var table = document.createElement(this.options.tableElement);
+            var row = document.createElement(this.options.rowElement);
+            var cell = document.createElement(this.options.cellElement);
             var input = document.createElement('input');
 
             input.setAttribute('maxlength', 1);
@@ -533,9 +537,15 @@
         },
 
         initClues: function () {
-            var self = this, container, cluesCont, clueEl, frag, el, label;
+            var self = this,
+                horizotalClues,
+                verticalClues,
+                container, cluesCont, clueEl, frag, el, label;
 
-            if (!this.options.clues.horizontal.length || !this.options.clues.vertical.length) {
+            horizotalClues =  typeof this.options.clues.horizontal === 'function' ? this.options.clues.horizontal() : this.options.clues.horizontal;
+            verticalClues =  typeof this.options.clues.vertical === 'function' ? this.options.clues.vertical() : this.options.clues.vertical;
+
+            if (!horizotalClues.length || !verticalClues.length) {
                 throw Error('Clues for the crossword are not set!');
             }
 
@@ -562,13 +572,13 @@
             label.classList.add(CrossWord.CLASS_PREFIX + 'clues-header');
             this.cluesEl.children[0].appendChild(label.cloneNode(true));
 
-            for (var i = 0; i < this.options.clues.horizontal.length; i++) {
+            for (var i = 0; i < horizotalClues.length; i++) {
                 if (!this.wordNumbers.horizontal[i]) {
                     continue;
                 }
 
                 el = clueEl.cloneNode(false);
-                el.innerHTML = '<span class="number">' + this.wordNumbers.horizontal[i].number + '.</span> ' + this.options.clues.horizontal[i];
+                el.innerHTML = '<span class="number">' + this.wordNumbers.horizontal[i].number + '.</span> ' + horizotalClues[i];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-h-').concat(this.wordNumbers.horizontal[i].coords.join('-')));
                 frag.appendChild(el);
             }
@@ -579,15 +589,16 @@
 
             cluesCont = document.createElement('ul');
             label = document.createElement('h3');
+            label.classList.add(CrossWord.CLASS_PREFIX + 'clues-header');
             label.textContent = this.options.clues.labels.vertical;
             this.cluesEl.children[1].appendChild(label);
-            for (var j = 0; j < this.options.clues.vertical.length; j++) {
+            for (var j = 0; j < verticalClues.length; j++) {
                 if (!this.wordNumbers.vertical[j]) {
                     continue;
                 }
 
                 el = clueEl.cloneNode(false);
-                el.innerHTML = '<span class="number">' + this.wordNumbers.vertical[j].number + '.</span> ' + this.options.clues.vertical[j];
+                el.innerHTML = '<span class="number">' + this.wordNumbers.vertical[j].number + '.</span> ' + verticalClues[j];
                 el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-v-').concat(this.wordNumbers.vertical[j].coords.join('-')));
                 frag.appendChild(el);
             }
@@ -743,8 +754,9 @@
                 }
 
                 switch (code) {
+                    case 46:
                     case 8:
-                        // Backspace
+                        // Backspace or Del
                         tileElement.firstElementChild.value = '';
 
                         if (
@@ -787,7 +799,7 @@
                         charEntered = String.fromCharCode(code).toUpperCase();
 
                         // check if the key code is a letter one
-                        if (/[A-Z\u00c4\u00d6\u00dc\u00df]/i.test(charEntered)) {
+                        if (/[0-9A-Z\u00c4\u00d6\u00dc\u00df]/i.test(charEntered)) {
                             tileElement.firstElementChild.value = charEntered;
 
                             if (
@@ -862,7 +874,7 @@
                     if (!cols[j].firstElementChild) {
                         continue;
                     }
-                    cols[j].firstElementChild.value = dataCols[j] === ' ' || dataCols[j] === this.options.blankChar ? '' : dataCols[j];
+                    cols[j].firstElementChild.value = (dataCols[j] === ' ' || dataCols[j] === this.options.blankChar) ? '' : (dataCols[j] || '');
                 }
             }
 
@@ -907,7 +919,6 @@
         },
 
         checkCrossword: function () {
-            console.log(this.options.data);
             return this.options.data === this.getCrosswordData();
         },
 
