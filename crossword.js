@@ -47,7 +47,7 @@
     function  merge2Objects (obj1, obj2) {
         var temp = {};
 
-        if (toString.call(obj1) !== '[object Object]') {
+        if (Object.prototype.toString.call(obj1) !== '[object Object]') {
             return temp;
         }
 
@@ -55,9 +55,9 @@
 
         Object.keys(obj1).map(function (k) {
             if (!obj2.hasOwnProperty(k)) {
-                temp[k] = toString.call(obj1[k]) === '[object Object]' ? merge2Objects(obj1[k], obj2[k]) : obj1[k];
+                temp[k] = Object.prototype.toString.call(obj1[k]) === '[object Object]' ? merge2Objects(obj1[k], obj2[k]) : obj1[k];
             } else {
-                temp[k] = toString.call(obj1[k]) === '[object Object]' ? merge2Objects(obj1[k], obj2[k]) : obj2[k];
+                temp[k] = Object.prototype.toString.call(obj1[k]) === '[object Object]' ? merge2Objects(obj1[k], obj2[k]) : obj2[k];
             }
         });
 
@@ -216,11 +216,11 @@
                         row: i,
                         col: j,
                         isSpecial: this.specialTiles.indexOf(i + ',' + j) !== -1,
-                        blank: chars[j].trim() === this.options.blankChar,
-                        hasLeft: j > 0 && chars[j - 1].replace(this.options.blankChar,'').length > 0,
+                        blank: chars[j] === this.options.blankChar,
+                        hasLeft: j > 0 && chars[j - 1].replace(this.options.blankChar, '').length > 0,
                         hasRight: j < (charsLen - 1) && chars[j+1].replace(this.options.blankChar,'').length > 0,
-                        hasUp: i > 0 && prevRowChars[j].trim().replace(this.options.blankChar,'').length > 0,
-                        hasDown: i < (rowsLen - 1) && nextRowChars[j].trim().replace(this.options.blankChar,'').length > 0
+                        hasUp: i > 0 && prevRowChars[j].replace(this.options.blankChar,'').length > 0,
+                        hasDown: i < (rowsLen - 1) && nextRowChars[j].replace(this.options.blankChar,'').length > 0
                     };
                 }
             }
