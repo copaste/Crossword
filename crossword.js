@@ -762,14 +762,14 @@
 
                 //for android chrome keycode fix
                 if (code === 0 || code === 229) {
-                    code = ev.target.value.charCodeAt(0);
+                    code = ev.target.value.charCodeAt(ev.target.value.length - 1);
                 }
 
                 switch (code) {
                     case 46:
                     case 8:
                         // Backspace or Del
-                        tileElement.firstElementChild.value = '';
+                        ev.target.value = '';
 
                         if (
                             (self.highlightState === CrossWord.HIGHLIGHT_HORIZONTAL && currentTile.hasLeft) ||
