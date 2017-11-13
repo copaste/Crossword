@@ -665,7 +665,7 @@
                 return;
             }
 
-            this.crosswordEl.addEventListener('click', (this._crosswordOnClick = function (ev) {
+            this._crosswordOnClick = function (ev) {
                 var target = ev.target.parentElement,
                     coords = target.dataset.coords && target.dataset.coords.split(',').map(Number),
                     matchHorizontalPos = null,
@@ -690,9 +690,9 @@
                 // Check if we are on the area of last selected word
                 if (lastSelectedTiles[0]) {
                     if (!(
-                        (lastSelectedTiles[0][0] <= coords[0] && coords[0] <= lastSelectedTiles[1][0]) &&
-                        (lastSelectedTiles[0][1] <= coords[1] && coords[1] <= lastSelectedTiles[1][1])
-                    )) {
+                            (lastSelectedTiles[0][0] <= coords[0] && coords[0] <= lastSelectedTiles[1][0]) &&
+                            (lastSelectedTiles[0][1] <= coords[1] && coords[1] <= lastSelectedTiles[1][1])
+                        )) {
                         highlightState = CrossWord.HIGHLIGHT_DEFAULT;
                     }
                 }
@@ -729,13 +729,17 @@
                 self._elementOnFocus && self._elementOnFocus.classList.remove(CrossWord.CLASS_PREFIX + 'onfocus');
                 self._elementOnFocus = target;
                 self._elementOnFocus.classList.add(CrossWord.CLASS_PREFIX + 'onfocus');
+                self._elementOnFocus.firstElementChild.focus();
 
                 ev.preventDefault();
                 ev.stopPropagation();
                 return false;
-            }));
+            };
 
-            this.crosswordEl.addEventListener('keydown', (this._crosswordOnKeydown = function (ev) {
+            this.crosswordEl.addEventListener('click', this._crosswordOnClick);
+            this.crosswordEl.addEventListener('touchend', this._crosswordOnClick);
+
+            this._crosswordOnKeydown = function (ev) {
                 var code = null,
                     tileElement = null,
                     coords = [],
@@ -751,9 +755,14 @@
                 coords = tileElement.dataset.coords.split(',').map(Number);
                 currentTile = self.letters[coords.join('-')];
 
-                code = ev.keyCode || ev.which || null;
+                code = ev.which || ev.keyCode || ev.code || null;
                 if (!code) {
                     return true;
+                }
+
+                //for android chrome keycode fix
+                if (code === 0 || code === 229) {
+                    code = ev.target.value.charCodeAt(0);
                 }
 
                 switch (code) {
@@ -803,7 +812,7 @@
 
                         // check if the key code is a letter one
                         if (/[0-9A-Z\u00c4\u00d6\u00dc\u00df]/i.test(charEntered)) {
-                            tileElement.firstElementChild.value = charEntered;
+                            ev.target.value = charEntered;
 
                             if (
                                 (self.highlightState === CrossWord.HIGHLIGHT_HORIZONTAL && currentTile.hasRight) ||
@@ -819,7 +828,9 @@
                 ev.preventDefault();
                 ev.stopPropagation();
                 return false;
-            }));
+            };
+
+            this.crosswordEl.addEventListener('keyup', this._crosswordOnKeydown);
 
             window.addEventListener('resize', (this._onWindowResize = function (ev) {
                 self._responsive.call(self, ev);
@@ -937,7 +948,8 @@
             if (this.crosswordEl) {
                 window.removeEventListener('resize', this._onWindowResize);
                 this.crosswordEl.removeEventListener('click', this._crosswordOnClick);
-                this.crosswordEl.removeEventListener('keydown', this._crosswordOnKeydown);
+                this.crosswordEl.removeEventListener('touchend', this._crosswordOnClick);
+                this.crosswordEl.removeEventListener('keyup', this._crosswordOnKeydown);
                 this._clueOnClick && this.cluesEl.removeEventListener('click', this._clueOnClick);
                 this.crosswordEl.parentElement.removeChild(this.crosswordEl);
 
