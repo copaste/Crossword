@@ -91,6 +91,21 @@
         return longestRowLen;
     }
 
+    function drawSquare(context, startx, starty, width, height, fillColor, strokeColor) {
+        width = width || 30;
+        height = height || 30;
+        fillColor = fillColor || 'white';
+        strokeColor = strokeColor || 'black';
+
+        context.beginPath();
+        context.rect(startx, starty, width, height);
+        context.fillStyle = fillColor;
+        context.fill();
+        context.lineWidth = 1;
+        context.strokeStyle = strokeColor;
+        context.stroke();
+    }
+
     CrossWord.HIGHLIGHT_DEFAULT     = '';
     CrossWord.HIGHLIGHT_HORIZONTAL  = '-';
     CrossWord.HIGHLIGHT_VERTICAL    = '|';
@@ -525,6 +540,16 @@
             return true;
         },
 
+        _getNextEmptyTile: function (coords) {
+            var el = document.getElementById('p-' + coords.join('-'));
+            coords = coords.slice();
+            while (el.firstElementChild && el.firstElementChild.value.length > 0) {
+                this.highlightState === CrossWord.HIGHLIGHT_VERTICAL ? coords[0]++ : coords[1]++;
+                el = document.getElementById('p-' + coords.join('-'))
+            }
+            return el;
+        },
+
         _isWordStart: function (coords) {
             return {
                 horizontal: this.wordsHorizontal.filter(function (w) {
@@ -819,7 +844,8 @@
                                 (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL && currentTile.hasDown)
                             ) {
                                 self.highlightState === CrossWord.HIGHLIGHT_VERTICAL ? coords[0]++ : coords[1]++;
-                                document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                                //document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                                self._getNextEmptyTile(coords).firstElementChild.focus();
                             }
                         }
                         break;
@@ -838,12 +864,12 @@
         },
 
         _responsive: function () {
-            var rows = this.crosswordEl.children,
+            var rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children,
                 cols,
-                size = (this.crosswordEl.offsetWidth / rows[0].children.length - 1.2).toFixed(2);
+                size = Math.floor((this.crosswordEl.offsetWidth - 2) / rows[0].children.length) - 1;
 
             for (var i = 0; i < rows.length; i++) {
-                cols = rows[i].children;
+                cols = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
                 for (var j = 0; j < cols.length; j++) {
                     cols[j].style.width = size + 'px';
                     cols[j].style.height = size + 'px';
@@ -934,6 +960,73 @@
 
         checkCrossword: function () {
             return this.options.data === this.getCrosswordData();
+        },
+
+        exportAsImage: function () {
+            var canvas = document.createElement('canvas'),
+                context = canvas.getContext("2d"),
+                rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children,
+                squareSize = 40,
+                crosswordWidth = squareSize * rows[0].children.length,
+                crosswordHeight = squareSize * rows.length,
+                cluesHeight = (this.options.clues.horizontal ? this.options.clues.horizontal.length + this.options.clues.vertical.length : 0) * 24 + 100,
+                canvasWidth = crosswordWidth,
+                canvasHeight = Math.max(crosswordHeight, cluesHeight),
+                text = '',
+                currentLine = 0;
+
+            canvas.setAttribute('width', canvasWidth + 400);
+            canvas.setAttribute('height', canvasHeight);
+            context.clearRect(0, 0, context.width, context.height);
+
+            for (var i = 0; i < rows.length; i++) {
+                var cells = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
+                for (var j = 0; j < cells.length; j++) {
+                    var tileColor = cells[j].classList.contains('special-tile') ? '#fde9ab' : cells[j].classList.contains('yncw-blank') ? '#273b44' : '#F4F4F4';
+                    var number = cells[j].getElementsByTagName('span');
+                    drawSquare(context, j * squareSize, i * squareSize, squareSize, squareSize, tileColor, tileColor === '#F4F4F4' ? '#DDDDDD' : '#FFFFFF');
+
+                    context.fillStyle = 'black';
+                    number[0] && context.fillText(number[0].textContent, (j * squareSize) + 3, (i * squareSize) + 12);
+                }
+            }
+
+            context.font = "bold 18px sans-serif";
+            context.fillText('Across', canvasWidth + 20, 30);
+
+            context.font = "12px sans-serif";
+            for (var hi = 0; hi < this.options.clues.horizontal.length; hi++) {
+                text = this.wordNumbers.horizontal[hi].number + '. ' + this.options.clues.horizontal[hi];
+                context.fillText(text, canvasWidth + 20, (currentLine = 60 + (hi*24)));
+            }
+
+            context.font = "bold 18px sans-serif";
+            context.fillText('Down', canvasWidth + 20, currentLine += 50);
+
+            context.font = "12px sans-serif";
+            for (var vi = 0; vi < this.options.clues.horizontal.length; vi++) {
+                text = this.wordNumbers.vertical[vi].number + '. ' + this.options.clues.vertical[vi];
+                context.fillText(text, canvasWidth + 20, currentLine + 30 + (vi*24));
+            }
+
+            //document.body.appendChild(canvas);
+            return canvas.toDataURL("image/jpeg", 1.0);
+        },
+
+        exportAsCSV: function () {
+            var csvText = [],
+                rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children;
+
+            for (var i = 0; i < rows.length; i++) {
+                var cells = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
+                csvText[i] = [];
+                for (var j = 0; j < cells.length; j++) {
+                    csvText[i].push((this.letters[i + '-' + j].isSpecial ? this.options.highlightChar : '') + this.letters[i + '-' + j].char);
+                }
+                csvText[i] = csvText[i].join(',');
+            }
+
+            return encodeURI("data:text/csv;charset=utf-8," + csvText.join("\r\n"));
         },
 
         destroy: function () {
