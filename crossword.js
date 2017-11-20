@@ -32,6 +32,7 @@
         this.specialTiles = [];
         this.highlightState = '';
         this.highlightedClue;
+        this._unique_prefix = CrossWord.CLASS_PREFIX + (+new Date() - parseInt(Math.random() * 1000)) + '-';
         this._elementOnFocus;
         this._cluesInitialized = false;
         this._fromTable = false;
@@ -153,7 +154,7 @@
             this.colsText = this._getColsText(this.rowsText);
             this.wordsHorizontal = this._getWords(this.rowsText);
             this.wordsVertical = this._getWords(this.colsText, true);
-            this.letters = this._mapLetters(this.rowsText);
+            this._lettersMap = this._mapLetters(this.rowsText);
             this.crosswordEl = this._create(this.rowsText);
 
             this._addNumbers();
@@ -182,7 +183,7 @@
 
         _getWords: function (rows, vertical) {
             var wordList = [];
-                vertical = vertical || false;
+            vertical = vertical || false;
 
             for (var i = 0; i < rows.length; i++) {
                 var row = rows[i];
@@ -226,11 +227,12 @@
                 var prevRowChars = (rows[i-1] || '').split('');
 
                 for (var j = 0; j < chars.length; j++) {
-                    map[i+'-'+j] = {
+                    map[i+'x'+j] = {
                         char: chars[j],
                         row: i,
                         col: j,
-                        isSpecial: this.specialTiles.indexOf(i + ',' + j) !== -1,
+                        cell: null,
+                        special: this.specialTiles.indexOf(i + ',' + j) !== -1,
                         blank: chars[j] === this.options.blankChar,
                         hasLeft: j > 0 && chars[j - 1].replace(this.options.blankChar, '').length > 0,
                         hasRight: j < (charsLen - 1) && chars[j+1].replace(this.options.blankChar,'').length > 0,
@@ -255,9 +257,9 @@
                     return r.split(',').map(function (x) {
                         return x.length === 0 ? self.options.blankChar : x;
                     })
-                    .join('');
+                        .join('');
                 })
-                .join("\n");
+                    .join("\n");
             }
 
             // split to array
@@ -360,13 +362,13 @@
                     var c = cell.cloneNode(false);
 
                     c.setAttribute('data-coords', i + ',' + j);
-                    c.setAttribute('id', 'p-' + i + '-' + j);
-                    c.classList.add('p-' + i + '-' + j);
+                    c.setAttribute('id', this._unique_prefix + i + '-' + j);
                     c.classList.add(CrossWord.CLASS_PREFIX + (chars[j] !== this.options.blankChar ? 'letter':'blank'));
                     this.specialTiles.indexOf(i + ',' + j) !== -1 && c.classList.add('special-tile');
 
                     c.classList.contains(CrossWord.CLASS_PREFIX + 'letter') && c.appendChild(input.cloneNode(false));
                     r.appendChild(c);
+                    this._lettersMap[i + 'x' + j].cell = c;
                 }
             }
 
@@ -380,12 +382,12 @@
             var row = coords[0];
             var col = coords[1];
 
-            if (this.letters[coords[0]+'-'+col].hasLeft) {
+            if (this._lettersMap[coords[0]+'x'+col].hasLeft) {
                 --col;
                 return this.getHorizontalWord([row, col]);
             }
 
-            while (this.letters[coords[0]+'-'+col] && this.letters[coords[0]+'-'+col].blank === false) {
+            while (this._lettersMap[coords[0]+'x'+col] && this._lettersMap[coords[0]+'x'+col].blank === false) {
                 col++;
             }
 
@@ -398,12 +400,12 @@
             var row = coords[0];
             var col = coords[1];
 
-            if (this.letters[row+'-'+coords[1]].hasUp) {
+            if (this._lettersMap[row+'x'+coords[1]].hasUp) {
                 --row;
                 return this.getVerticalWord([row, col]);
             }
 
-            while (this.letters[row+'-'+coords[1]] && this.letters[row+'-'+coords[1]].blank === false) {
+            while (this._lettersMap[row+'x'+coords[1]] && this._lettersMap[row+'x'+coords[1]].blank === false) {
                 ++row;
             }
 
@@ -412,10 +414,11 @@
         },
 
         getSpecialWord: function () {
+            var self = this;
             return this.specialTiles.map(function (coords) {
-               return document.getElementById('p-' + coords.replace(',', '-')).firstElementChild.value;
+                return self._lettersMap(coords.replace(',', 'x')).cell.firstElementChild.value;
             })
-            .join('');
+                .join('');
         },
 
         _getSpecialTiles: function () {
@@ -444,7 +447,7 @@
             this.options.data = this.options.data.split("\n").map(function(row) {
                 return row.replace(new RegExp(self.options.highlightChar, 'g'), '');
             })
-            .join("\n");
+                .join("\n");
 
             return specialTiles;
         },
@@ -457,26 +460,26 @@
                 wordList = this.wordsHorizontal.concat(this.wordsVertical);
 
             for (var i = 0; i < wordList.length; i++) {
-                boxClasses.push('p-' + wordList[i].coords[0].join('-'));
+                boxClasses.push(wordList[i].coords[0].join('x'));
             }
 
             // Sort the words by row
             boxClasses = boxClasses.sort(function(a, b) {
-                var aa = a.replace('p-', '').split('-').map(Number),
-                    bb = b.replace('p-', '').split('-').map(Number);
+                var aa = a.split('x').map(Number),
+                    bb = b.split('x').map(Number);
 
                 return aa[0] > bb[0] ? 1 : (bb[0] > aa[0] ? -1 : (aa[1] > bb[1] ? 1 : (bb[1] > aa[1] ? -1 : 0)));
             })
-            .filter(function (value, index, self) {
-                return self.indexOf(value) === index;
-            });
+                .filter(function (value, index, self) {
+                    return self.indexOf(value) === index;
+                });
 
             boxClasses.map(function (id) {
                 var s = span.cloneNode(false),
-                    word = self._isWordStart(id.replace('p-','').split('-'));
+                    word = self._isWordStart(id.split('x'));
 
                 s.textContent = (++counter) + '';
-                document.getElementById(id).appendChild(s);
+                self._lettersMap[id].cell.appendChild(s);
 
                 word.horizontal && self.wordNumbers.horizontal.push({coords: word.horizontal.coords[0], number: counter});
                 word.vertical && self.wordNumbers.vertical.push({coords: word.vertical.coords[0], number: counter});
@@ -484,7 +487,8 @@
         },
 
         highlight: function (coords) {
-            var selectedTiles = [];
+            var self = this,
+                selectedTiles = [];
 
             if (!Array.isArray(coords) || coords.length !== 2) {
                 return;
@@ -492,15 +496,15 @@
 
             for (var i = coords[0][0]; i < coords[1][0]+1; i++) {
                 for (var j = coords[0][1]; j < coords[1][1]+1; j++) {
-                    selectedTiles.push('p-' + i + '-' + j);
+                    selectedTiles.push(i + 'x' + j);
                 }
             }
 
             this.clearHighlight();
             this.highlightedTiles = selectedTiles.map(function (id) {
-                var el = document.getElementById(id);
-                    el.classList.add('highlight');
-                    return el;
+                var el = self._lettersMap[id].cell;
+                el.classList.add('highlight');
+                return el;
             });
 
             return this.highlightedTiles;
@@ -517,7 +521,7 @@
 
             for (var i = wordCoords[0][0]; i < wordCoords[1][0]+1; i++) {
                 for (var j = wordCoords[0][1]; j < wordCoords[1][1]+1; j++) {
-                    if (document.getElementById('p-' + i + '-' + j).firstElementChild.value.length === 0) {
+                    if (this._lettersMap(i + 'x' + j).cell.firstElementChild.value.length === 0) {
                         return false;
                     }
                 }
@@ -531,7 +535,7 @@
 
             for (var i = wordCoords[0][0]; i < wordCoords[1][0]+1; i++) {
                 for (var j = wordCoords[0][1]; j < wordCoords[1][1]+1; j++) {
-                    if (document.getElementById('p-' + i + '-' + j).firstElementChild.value.length === 0) {
+                    if (this._lettersMap(i + 'x' + j).firstElementChild.value.length === 0) {
                         return false;
                     }
                 }
@@ -541,11 +545,12 @@
         },
 
         _getNextEmptyTile: function (coords) {
-            var el = document.getElementById('p-' + coords.join('-'));
-            coords = coords.slice();
+            var el = this._lettersMap[coords.join('x')].cell;
+                coords = coords.slice();
+
             while (el.firstElementChild && el.firstElementChild.value.length > 0) {
                 this.highlightState === CrossWord.HIGHLIGHT_VERTICAL ? coords[0]++ : coords[1]++;
-                el = document.getElementById('p-' + coords.join('-'))
+                el = this._lettersMap[coords.join('x')].cell;
             }
             return el;
         },
@@ -604,7 +609,8 @@
 
                 el = clueEl.cloneNode(false);
                 el.innerHTML = '<span class="number">' + this.wordNumbers.horizontal[i].number + '.</span> ' + horizotalClues[i];
-                el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-h-').concat(this.wordNumbers.horizontal[i].coords.join('-')));
+                el.setAttribute('id', this._unique_prefix.concat('clue-h-').concat(this.wordNumbers.horizontal[i].coords.join('-')));
+                el.setAttribute('data-coords', this.wordNumbers.horizontal[i].coords.join(','));
                 frag.appendChild(el);
             }
 
@@ -624,7 +630,8 @@
 
                 el = clueEl.cloneNode(false);
                 el.innerHTML = '<span class="number">' + this.wordNumbers.vertical[j].number + '.</span> ' + verticalClues[j];
-                el.setAttribute('id', CrossWord.CLASS_PREFIX.concat('clue-v-').concat(this.wordNumbers.vertical[j].coords.join('-')));
+                el.setAttribute('id', this._unique_prefix.concat('clue-v-').concat(this.wordNumbers.vertical[j].coords.join('-')));
+                el.setAttribute('data-coords', this.wordNumbers.vertical[j].coords.join(','));
                 frag.appendChild(el);
             }
 
@@ -649,17 +656,17 @@
 
             this.cluesEl.addEventListener('click', (this._clueOnClick = function (ev) {
                 var clueId = ev.target.getAttribute('id') || '',
-                    coords = clueId.replace(/yncw\-clue\-[v|h]\-/g, ''),
+                    coords = ev.target.dataset.coords.replace(',', 'x'),
                     isVertical = clueId.indexOf('-v-') !== -1,
                     currentWord = self.wordsHorizontal.concat(self.wordsVertical).filter(function (w) {
-                        return coords === w.coords[0].join('-') && w.isVertical === isVertical;
+                        return coords === w.coords[0].join('x') &&  w.isVertical === isVertical;
                     })[0] || null;
 
                 if (currentWord) {
                     self.highlight(currentWord.coords);
-                    self._highlightClue([coords.split(',')], isVertical);
+                    self._highlightClue([coords.split('x')], isVertical);
                     self.highlightState = isVertical ? CrossWord.HIGHLIGHT_VERTICAL : CrossWord.HIGHLIGHT_HORIZONTAL;
-                    document.getElementById('p-' + coords).firstElementChild.focus();
+                    self._lettersMap[coords].cell.firstElementChild.focus();
                 }
 
                 ev.preventDefault();
@@ -676,7 +683,7 @@
             }
 
             vertical = vertical || false;
-            id = CrossWord.CLASS_PREFIX + 'clue-' + (vertical ? 'v' : 'h') + '-' + coords[0].join('-');
+            id = this._unique_prefix + 'clue-' + (vertical ? 'v' : 'h') + '-' + coords[0].join('-');
             this.highlightedClue && this.highlightedClue.classList.remove('highlight');
             this.highlightedClue = document.getElementById(id);
             this.highlightedClue && this.highlightedClue.classList.add('highlight');
@@ -770,7 +777,7 @@
                     coords = [],
                     currentTile = null,
                     charEntered = '';
-
+                ev.preventDefault();
                 ev = ev ? ev : window.event;
                 if (!ev) {
                     return true;
@@ -778,7 +785,7 @@
 
                 tileElement = ev.target.parentElement;
                 coords = tileElement.dataset.coords.split(',').map(Number);
-                currentTile = self.letters[coords.join('-')];
+                currentTile = self._lettersMap[coords.join('x')];
 
                 code = ev.which || ev.keyCode || ev.code || null;
                 if (!code) {
@@ -794,42 +801,44 @@
                     case 46:
                     case 8:
                         // Backspace or Del
+                        var moveBack = ev.target.value.length === 0;
                         ev.target.value = '';
 
                         if (
-                            (self.highlightState === CrossWord.HIGHLIGHT_HORIZONTAL && currentTile.hasLeft) ||
-                            (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL && currentTile.hasUp)
+                            moveBack &&
+                            ((self.highlightState === CrossWord.HIGHLIGHT_HORIZONTAL && currentTile.hasLeft) ||
+                                (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL && currentTile.hasUp))
                         ) {
                             self.highlightState === CrossWord.HIGHLIGHT_VERTICAL ? coords[0]-- : coords[1]--;
-                            document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                            self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                         }
                         break;
                     case 37:
                         // Left
                         if (currentTile.hasLeft) {
                             coords[1]--;
-                            document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                            self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                         }
                         break;
                     case 38:
                         // Top
                         if (currentTile.hasUp) {
                             coords[0]--;
-                            document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                            self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                         }
                         break;
                     case 39:
                         // Right
                         if (currentTile.hasRight) {
                             coords[1]++;
-                            document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                            self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                         }
                         break;
                     case 40:
                         // Down
                         if (currentTile.hasDown) {
                             coords[0]++;
-                            document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                            self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                         }
                         break;
                     default:
@@ -844,7 +853,7 @@
                                 (self.highlightState === CrossWord.HIGHLIGHT_VERTICAL && currentTile.hasDown)
                             ) {
                                 self.highlightState === CrossWord.HIGHLIGHT_VERTICAL ? coords[0]++ : coords[1]++;
-                                //document.getElementById('p-' + coords.join('-')).firstElementChild.focus();
+                                //self._lettersMap[coords.join('x')].cell.firstElementChild.focus();
                                 self._getNextEmptyTile(coords).firstElementChild.focus();
                             }
                         }
@@ -882,9 +891,9 @@
         },
 
         getCrosswordData: function () {
-          var rows = this.crosswordEl.children,
-              cols,
-              data = '';
+            var rows = this.crosswordEl.children,
+                cols,
+                data = '';
 
             for (var i = 0; i < rows.length; i++) {
                 cols = rows[i].children;
@@ -941,7 +950,7 @@
                 return null;
             }
 
-            return this.letters[this._elementOnFocus.dataset.coords.replace(',', '-')].char === this._elementOnFocus.value;
+            return this._lettersMap[this._elementOnFocus.dataset.coords.replace(',', 'x')].char === this._elementOnFocus.value;
         },
 
         checkCurrentWord: function () {
@@ -950,7 +959,7 @@
             }
 
             for (var i = 0;i < this.highlightedTiles.length; i++) {
-                if (this.letters[this.highlightedTiles[i].dataset.coords.replace(',', '-')].char !== this.highlightedTiles[i].firstElementChild.value) {
+                if (this._lettersMap[this.highlightedTiles[i].dataset.coords.replace(',', 'x')].char !== this.highlightedTiles[i].firstElementChild.value) {
                     return false;
                 }
             }
@@ -1021,7 +1030,7 @@
                 var cells = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
                 csvText[i] = [];
                 for (var j = 0; j < cells.length; j++) {
-                    csvText[i].push((this.letters[i + '-' + j].isSpecial ? this.options.highlightChar : '') + this.letters[i + '-' + j].char);
+                    csvText[i].push((this._lettersMap[i + 'x' + j].special ? this.options.highlightChar : '') + this._lettersMap[i + 'x' + j].char);
                 }
                 csvText[i] = csvText[i].join(',');
             }
