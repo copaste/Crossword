@@ -159,7 +159,10 @@
 
             this._addNumbers();
             this._initCrosswordEvents();
-            this.options.responsive && this._responsive();
+
+            this.options.responsive && setTimeout(function () {
+                self._responsive();
+            }, 300);
         },
 
         _getColsText: function (rows) {
@@ -875,7 +878,7 @@
         _responsive: function () {
             var rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children,
                 cols,
-                size = Math.floor((this.crosswordEl.offsetWidth - 2) / rows[0].children.length) - 1;
+                size = parseFloat((c.offsetWidth - 2) / c.children.length).toFixed(2) - 1;
 
             for (var i = 0; i < rows.length; i++) {
                 cols = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
