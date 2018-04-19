@@ -878,7 +878,7 @@
         _responsive: function () {
             var rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children,
                 cols,
-                size = parseFloat((c.offsetWidth - 2) / c.children.length).toFixed(2) - 1;
+                size = parseFloat((this.crosswordEl.offsetWidth - 2) / rows[0].children.length).toFixed(1) - 1;
 
             for (var i = 0; i < rows.length; i++) {
                 cols = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
