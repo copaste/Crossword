@@ -168,15 +168,16 @@
         _getColsText: function (rows) {
             var rowLetters = [],
                 colWords = [],
-                len = rows[0].length;
+                colslen = rows.length,
+                rowslen = rows[0].length;
 
             for (var i = 0; i < rows.length; i++) {
                 rowLetters[i] = rows[i].split('');
             }
 
-            for (var j = 0; j < len; j++) {
+            for (var j = 0; j < rowslen; j++) {
                 colWords[j] = [];
-                for (var g = 0; g < len; g++) {
+                for (var g = 0; g < colslen; g++) {
                     colWords[j] += rowLetters[g] && rowLetters[g][j] || '';
                 }
             }
@@ -260,9 +261,9 @@
                     return r.split(',').map(function (x) {
                         return x.length === 0 ? self.options.blankChar : x;
                     })
-                        .join('');
+                    .join('');
                 })
-                    .join("\n");
+                .join("\n");
             }
 
             // split to array
