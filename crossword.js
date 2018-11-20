@@ -879,7 +879,7 @@
         _responsive: function () {
             var rows = this.options.tableElement === 'table' ? this.crosswordEl.rows : this.crosswordEl.children,
                 cols,
-                size = parseFloat((this.crosswordEl.offsetWidth - 2) / rows[0].children.length).toFixed(1) - 1;
+                size = parseFloat(this.crosswordEl.offsetWidth / rows[0].children.length).toFixed(1);
 
             for (var i = 0; i < rows.length; i++) {
                 cols = this.options.tableElement === 'table' ? rows[i].cells : rows[i].children;
@@ -888,7 +888,7 @@
                     cols[j].style.height = size + 'px';
 
                     if (cols[j].firstElementChild) {
-                        cols[j].firstElementChild.style.fontSize = Math.floor(size - 3) + 'px'
+                        cols[j].firstElementChild.style.fontSize = Math.floor(size) + 'px'
                     }
                 }
             }
